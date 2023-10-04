@@ -1,0 +1,4 @@
+pyTelegramBotAPI==4.13.0
+peewee==3.16.3
+SimpleQIWI==0.7
+pyperclip==1.8.2
