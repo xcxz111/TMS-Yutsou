@@ -62,7 +62,7 @@ def billing_callback(callback):
 @bot.callback_query_handler(func=lambda callback: callback.data.startswith('qiwi'))
 def qiwi_callback(callback):
     user_id = callback.from_user.id
-    bot.edit_message_text(f"Сделайте перевод на номер QIWI +79033749003 \nПри оплате обязательно укажите в комментарии ваш ID \nВаш ID: <code>{user_id}</code> \nБаланс будет пополнен автоматически в течение нескольких минут.", callback.message.chat.id, callback.message.message_id, parse_mode='html', reply_markup=qiwi_markup())
+    bot.edit_message_text(f"Сделайте перевод на номер QIWI +79033749003 \nПри оплате обязательно укажите в комментарии ваш ID \nВаш ID: <code>{user_id}</code> \nБаланс будет пополнен автоматически в течение нескольких минут.\nНажмите скопировать а после перейдите по ссылке для оплаты", callback.message.chat.id, callback.message.message_id, parse_mode='html', reply_markup=qiwi_markup())
 
 
 @bot.callback_query_handler(func=lambda callback: callback.data.startswith('copy_id'))

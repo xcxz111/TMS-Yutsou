@@ -43,6 +43,7 @@ def qiwi_markup():
 
 def main_markup():
     markup = InlineKeyboardMarkup()
+    markup.add(InlineKeyboardButton("перейти для оплаты", url="qiwi.com/p/79033749003"))
     markup.add(InlineKeyboardButton("🔹 Главная", callback_data="home"))
     return markup
 
