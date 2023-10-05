@@ -1,6 +1,5 @@
 from peewee import *
 from datetime import datetime
-import time
 
 
 db = SqliteDatabase('database_market.db')
@@ -37,14 +36,16 @@ class Products(BaseModel):
     SellProductTime = DateTimeField()
 
 
-# class Payments(BaseModel):
-#     UserID = IntegerField()
-#     PaymentMethod = CharField()
-#     Summ = FloatField()
-#     PaymentTime = DateTimeField(default=datetime.now())
+class Transactions(BaseModel):
+    ID = IntegerField(primary_key=True)
+    UserID = IntegerField()
+    Method = CharField()
+    Comment = CharField()
+    Summ = FloatField()
+    Time = DateTimeField(default=datetime.now())
 
 
 def init_database():
     global db
-    db.create_tables([Users, Categories, Products])
+    db.create_tables([Users, Categories, Products, Transactions])
     return db

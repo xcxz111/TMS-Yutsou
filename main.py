@@ -13,11 +13,13 @@ from config import bot
 from keyboards import home_markup, cabinet_markup, billing_markup, admin_markup, category_markup, categories_markup, \
     buy_categories_markup, to_pay_account_markup, my_cart, cart_data_markup, qiwi_markup, main_markup
 from models import Users, Categories, Products, init_database
+from qiwi import start_qiwi
 
 
 db = init_database()
 admins = [288657881]
 temp = {}
+Thread(target=start_qiwi, daemon=True).start()
 
 
 class States(StatesGroup):
