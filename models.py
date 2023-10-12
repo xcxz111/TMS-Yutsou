@@ -12,7 +12,7 @@ class BaseModel(Model):
 
 class Users(BaseModel):
     UserID = IntegerField(primary_key=True)
-    UserName = CharField()
+    UserName = CharField(null=True)
     UserBalance = FloatField(default=0.0)
     Purchases = IntegerField(default=0)
     LastGetProduct = IntegerField(default=0)
@@ -26,6 +26,7 @@ class Categories(BaseModel):
 
 class Products(BaseModel):
     ProductID = CharField(primary_key=True)
+    FileName = CharField()
     UserID = IntegerField(default=-1)
     Category = ForeignKeyField(Categories, backref='products')
     ProductFormat = CharField()

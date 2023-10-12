@@ -26,6 +26,7 @@ class States(StatesGroup):
     format_ = State()
     country = State()
     price = State()
+    new_price = State()
     category = State()
     file = State()
     count = State()
@@ -93,22 +94,30 @@ def add_category_callback(callback):
     bot.edit_message_text("Введите название формата: \nВведите /cancel для выхода", callback.message.chat.id, callback.message.message_id)
 
 
+@bot.callback_query_handler(func=lambda callback: callback.data.startswith('edit_categories'))
+def edit_category_callback(callback):
+    categories = Categories.select().dicts()
+    bot.edit_message_text("Выберите категорию:", callback.message.chat.id, callback.message.message_id, reply_markup=categories_markup(categories, "edit_category"))
+
+
+@bot.callback_query_handler(func=lambda callback: callback.data.startswith("edit_category"))
+def edit_category_callback(callback):
+    category_id = callback.data.split("|")[1]
+    bot.edit_message_text("Введите новую стоимость для категории:", callback.message.chat.id, callback.message.message_id)
+    bot.set_state(callback.from_user.id, States.new_price, callback.message.chat.id)
+
+    with bot.retrieve_data(callback.from_user.id, callback.message.chat.id) as data:
+        data["category_id"] = category_id
+
+
 @bot.callback_query_handler(func=lambda callback: callback.data.startswith("del_categories"))
 def del_categories_callback(callback):
-    global admins
-    if callback.from_user.id not in admins:
-        return
-
     categories = Categories.select().dicts()
     bot.edit_message_text("Выберите категорию:", callback.message.chat.id, callback.message.message_id, reply_markup=categories_markup(categories, "del_category"))
 
 
 @bot.callback_query_handler(func=lambda callback: callback.data.startswith("del_category"))
-def del_categories_callback(callback):
-    global admins
-    if callback.from_user.id not in admins:
-        return
-
+def del_category_callback(callback):
     data = callback.data.split("|")[1]
     Categories.delete().where(Categories.id == data).execute()
     bot.edit_message_text("Успешно удалено", callback.message.chat.id, callback.message.message_id, reply_markup=admin_markup())
@@ -160,7 +169,7 @@ def buy_tg_callback(callback):
     user = Users.select().where(Users.UserID == callback.from_user.id).get()
     price = data["price"]
     if price > user.UserBalance:
-        bot.send_message(callback.message.chat.id, f"Не хватает {abs(user.UserBalance - price)}$", reply_markup=home_markup(is_admin=callback.from_user.id in admins))
+        bot.send_message(callback.message.chat.id, f"Не хватает {abs(user.UserBalance - price)} RUB", reply_markup=home_markup(is_admin=callback.from_user.id in admins))
         return
     user.UserBalance -= price
     user.Purchases += len(products)
@@ -192,7 +201,7 @@ def cart_callback(callback):
         "quantity": quantity,
         "products": products
     }
-    bot.edit_message_text(f"Аккаунтов: {quantity}\nЦена: {price}", callback.message.chat.id, callback.message.message_id, reply_markup=my_cart(uid))
+    bot.edit_message_text(f"Аккаунтов: {quantity} шт.\nЦена: {price} RUB", callback.message.chat.id, callback.message.message_id, reply_markup=my_cart(uid))
 
 
 @bot.callback_query_handler(func=lambda callback: callback.data.startswith('buy_in_cart'))
@@ -208,7 +217,7 @@ def buy_in_cart_callback(callback):
     user = Users.select().where(Users.UserID == callback.from_user.id).get()
     price = products[0].ProductPrice * len(products)
     if price > user.UserBalance:
-        bot.send_message(callback.message.chat.id, f"Не хватает {abs(user.UserBalance - price)}$", reply_markup=home_markup(is_admin=callback.from_user.id in admins))
+        bot.send_message(callback.message.chat.id, f"Не хватает {abs(user.UserBalance - price)} RUB", reply_markup=home_markup(is_admin=callback.from_user.id in admins))
         return
     user.UserBalance -= price
     user.Purchases += len(products)
@@ -316,14 +325,36 @@ def create_category(message):
     bot.send_message(message.chat.id, "Категория успешно создана", reply_markup=admin_markup())
 
 
+@bot.message_handler(state=States.new_price)
+def edit_category_price_state(message):
+    new_price = message.text
+
+    try:
+        new_price = float(new_price)
+    except ValueError:
+        bot.send_message(message.chat.id, "Новая стоимость должна быть числом. Попробуйте снова.")
+        return
+
+    with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
+        category_id = data["category_id"]
+    category = Categories.get(Categories.id == category_id)
+    category.Price = new_price
+    category.save()
+    Products.update(ProductPrice=new_price).where(Products.Category == category_id, Products.ProductStatus == "sale").execute()
+    bot.delete_state(message.from_user.id, message.chat.id)
+    bot.send_message(message.chat.id, f"Стоимость категории обновлена. Новая стоимость: {new_price} RUB", reply_markup=admin_markup())
+
+
 @bot.message_handler(state=States.file, content_types=["document"])
 def file_state(message):
     with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
         category_id = data["id"]
     category = Categories.get(Categories.id == category_id)
+    file_name = message.document.file_name
 
     product = Products.create(
             ProductID=message.document.file_id,
+            FileName=file_name,
             Category=category_id,
             ProductFormat=category.FormatName,
             ProductCountry=category.CountryName,
@@ -374,7 +405,7 @@ def count_state(message):
         f"формат: {products[0].ProductFormat}\n"
         f"страна: {products[0].ProductCountry}\n"
         f"Количество: {quantity}\n"
-        f"к оплате: {total_price}$\n"
+        f"к оплате: {total_price} RUB\n"
     )
 
     uid = str(uuid.uuid4())

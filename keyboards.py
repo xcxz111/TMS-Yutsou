@@ -60,6 +60,7 @@ def admin_markup():
 def category_markup():
     markup = InlineKeyboardMarkup()
     markup.add(InlineKeyboardButton("добавить категории", callback_data="add_categories")),
+    markup.add(InlineKeyboardButton("изменить категории", callback_data="edit_categories")),
     markup.add(InlineKeyboardButton("удалить категории", callback_data="del_categories")),
 
     markup.add(
@@ -71,7 +72,7 @@ def category_markup():
 def categories_markup(categories, n):
     markup = InlineKeyboardMarkup()
     for category in categories:
-        name = " - ".join([category["FormatName"], category["CountryName"], str(category["Price"]) + "$"])
+        name = " - ".join([category["FormatName"], category["CountryName"], str(category["Price"]) + " RUB"])
         callback_data = f"{n}|{category['id']}"
         markup.add(InlineKeyboardButton(name, callback_data=callback_data))
     markup.add(
@@ -88,7 +89,7 @@ def buy_categories_markup(products):
             continue
 
         if product.Category not in categories:
-            name = f"{product.ProductFormat} - {product.ProductCountry} - {product.ProductPrice}$"
+            name = f"{product.ProductFormat} - {product.ProductCountry} - {product.ProductPrice} RUB"
             markup.add(InlineKeyboardButton(name, callback_data=f"buy_categories|{product.Category.id}"))
             categories.append(product.Category)
     markup.add(
